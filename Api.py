@@ -1,39 +1,52 @@
-from fastapi import FastAPI, HTTPException
+from flask import Flask, request, jsonify
 from Banco import Banco
-from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+
+app = Flask(__name__)
 db = Banco()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
-
-
-@app.get("/parceiros")
+@app.route("/parceiros", methods=["GET"])
 def get_parceiros():
-    return db.listar_parceiros()
+    return jsonify(db.listar_parceiros())
 
-@app.post("/parceiros")
-def create_parceiro(nome: str, idade: int, planeta: str):
+
+@app.route("/parceiros", methods=["POST"])
+def create_parceiro():
+    data = request.json
+
+    nome = data.get("nome")
+    idade = data.get("idade")
+    planeta = data.get("planeta")
+
     if db.add_parceiro(nome, idade, planeta):
-        return {"message": "Parceiro criado!"}
-    raise HTTPException(status_code=400, detail="Nome duplicado!")
+        return jsonify({"message": "Parceiro criado!"}), 201
 
-@app.put("/parceiros/{id}")
-def update_parceiro(id: int, nome: str, idade: int, planeta: str):
+    return jsonify({"detail": "Nome duplicado!"}), 400
+
+
+@app.route("/parceiros/<int:id>", methods=["PUT"])
+def update_parceiro(id):
+    data = request.json
+
+    nome = data.get("nome")
+    idade = data.get("idade")
+    planeta = data.get("planeta")
+
     db.atualizar_parceiro(id, nome, idade, planeta)
-    return {"message": "Parceiro atualizado!"}
+    return jsonify({"message": "Parceiro atualizado!"})
 
-@app.delete("/parceiros/{id}")
-def delete_parceiro(id: int):
+
+@app.route("/parceiros/<int:id>", methods=["DELETE"])
+def delete_parceiro(id):
     db.deletar_parceiro(id)
-    return {"message": "Parceiro deletado!"}
+    return jsonify({"message": "Parceiro deletado!"})
 
 
-@app.get("/personagens")
+
+@app.route("/personagens", methods=["GET"])
 def get_personagens():
-    return db.listar_personagens()
+    return jsonify(db.listar_personagens())
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
